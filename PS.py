@@ -17,7 +17,7 @@ def process_scheduling(df: pd.DataFrame) -> dict:
     try:
         # Convert datetime columns to datetime type for sorting and calculations
         df['due_datetime'] = pd.to_datetime(df['due_datetime'], errors='coerce')
-        df['job_number'] = df['job_number'].astype(str)  # Ensure job_number is treated as text
+        df['job_number'] = df['job_number'].astype(str).str.replace(r'\.0$', '', regex=True)  # Ensure job_number is treated as text without .0
 
         # Check for necessary columns
         required_columns = {'Machine_Name', 'due_datetime', 'planned_run_time', 'planned_setup_time', 'LAB1', 'LAB2', 'LAB3', 'LAB4'}
@@ -25,8 +25,6 @@ def process_scheduling(df: pd.DataFrame) -> dict:
             raise ValueError("Input DataFrame is missing one or more required columns.")
 
         # Remove rows that contain 'Applied filters' or other unwanted conditions
-        # Assuming the unwanted rows have "Applied filters" in the 'Machine_Name' column
-        # and other specific unwanted text patterns in their descriptions
         unwanted_conditions = (
             df['Machine_Name'].str.contains('Applied filters', case=False, na=False) |
             df['Machine_Name'].str.contains('Day 9/4/2023 - 9/3/2024', case=False, na=False) |
