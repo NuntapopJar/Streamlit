@@ -24,8 +24,16 @@ def process_scheduling(df: pd.DataFrame) -> dict:
         if not required_columns.issubset(df.columns):
             raise ValueError("Input DataFrame is missing one or more required columns.")
 
-        # Remove any entries where Machine_Name is 'Applied filters'
-        df = df[df['Machine_Name'] != 'Applied filters']
+        # Remove rows that contain 'Applied filters' or other unwanted conditions
+        # Assuming the unwanted rows have "Applied filters" in the 'Machine_Name' column
+        # and other specific unwanted text patterns in their descriptions
+        unwanted_conditions = (
+            df['Machine_Name'].str.contains('Applied filters', case=False, na=False) |
+            df['Machine_Name'].str.contains('Day 9/4/2023 - 9/3/2024', case=False, na=False) |
+            df['Machine_Name'].str.contains('Day is not 10/23/2023', case=False, na=False) |
+            df['Machine_Name'].str.contains('Machine_Number is not \(Blank\)', case=False, na=False)
+        )
+        df = df[~unwanted_conditions]  # Keep only the rows that do not match the conditions
 
         # Prepare a dictionary to store schedule for each machine
         schedule = {}
@@ -94,8 +102,6 @@ def main():
 
             # Display the schedules and provide download options
             for machine_name, machine_schedule in schedule.items():
-                if machine_name == 'Applied filters':
-                    continue  # Skip the machine named 'Applied filters'
                 st.subheader(f"Schedule for Machine: {machine_name}")
                 st.dataframe(machine_schedule)
                 
