@@ -8,7 +8,7 @@ import numpy as np
 import os
 
 # Path to your local image file
-image_path = r"C:\Users\Support\OneDrive - The Siam Cement Public Company Limited\Documents\PowerAPP\SCGP_Logo_Full-Version_Isolated.png"  # Replace with your local file name
+image_path = "SCGP_Logo_Full-Version_Isolated.png"  # Replace with your local file name
 
 # Check if the image file exists
 if os.path.exists(image_path):
