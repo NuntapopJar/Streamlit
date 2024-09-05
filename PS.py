@@ -5,6 +5,16 @@ from scipy.spatial import distance
 from datetime import timedelta
 from sklearn.cluster import KMeans
 import numpy as np
+import os
+
+# Path to your local image file
+image_path = r"C:\Users\Support\OneDrive - The Siam Cement Public Company Limited\Documents\PowerAPP\SCGP_Logo_Full-Version_Isolated.png"  # Replace with your local file name
+
+# Check if the image file exists
+if os.path.exists(image_path):
+    st.image(image_path, use_column_width=True)  # Display the image using the local file path
+else:
+    st.warning(f"Image not found at {image_path}. Please check the path or upload the image to the correct directory.")
 
 # Function to calculate Euclidean distance between LAB color values
 def calculate_color_distance(row1, row2):
