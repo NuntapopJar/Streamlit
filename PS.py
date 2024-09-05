@@ -16,6 +16,7 @@ def calculate_color_distance(row1, row2):
 def process_scheduling(df):
     # Convert datetime columns to datetime type for sorting and calculations
     df['due_datetime'] = pd.to_datetime(df['due_datetime'])
+    df['start_datetime'] = pd.to_datetime(df['start_datetime'])
     df['job_number'] = df['job_number'].astype(str)  # Ensure job_number is treated as text
 
     # Prepare a dictionary to store schedule for each machine
@@ -37,18 +38,22 @@ def process_scheduling(df):
         # Further sort by Size and Plate_No (Rank 3) within each cluster
         sorted_group = sorted_group.sort_values(by=['color_cluster', 'due_datetime', 'Size', 'Plate_No'])
 
+        # Identify the earliest start_datetime for this machine
+        earliest_start = sorted_group['start_datetime'].min()
+
         # Adjust start times based on planned setup and run times
         sorted_group = sorted_group.reset_index(drop=True)
-        sorted_group['adjusted_start_datetime'] = pd.Timestamp('now')  # Initial placeholder for start time
+        sorted_group['adjusted_start_datetime'] = pd.Timestamp('now')  # Placeholder for start time
 
         for i in range(len(sorted_group)):
             if i == 0:
-                sorted_group.loc[i, 'adjusted_start_datetime'] = pd.Timestamp('now')  # Earliest possible time
+                # Set the start time of the first job to the earliest start time for this machine
+                sorted_group.loc[i, 'adjusted_start_datetime'] = earliest_start
             else:
                 prev_end_time = sorted_group.loc[i-1, 'adjusted_start_datetime'] + timedelta(
                     minutes=int(sorted_group.loc[i-1, 'planned_run_time']) + int(sorted_group.loc[i-1, 'planned_setup_time'])
                 )
-                sorted_group.loc[i, 'adjusted_start_datetime'] = max(prev_end_time, pd.Timestamp('now'))
+                sorted_group.loc[i, 'adjusted_start_datetime'] = max(prev_end_time, earliest_start)
 
         # Drop the original start_datetime column to avoid confusion
         sorted_group = sorted_group.drop(columns=['start_datetime'])
