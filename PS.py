@@ -22,12 +22,35 @@ def calculate_color_distance(row1, row2):
     lab2 = row2[['LAB1', 'LAB2', 'LAB3', 'LAB4']].fillna(0).to_numpy()
     return distance.euclidean(lab1, lab2)
 
-# Enhanced function to process the scheduling with improved LAB color similarity prioritization
+# Updated function to process scheduling with machine break times
 def process_scheduling(df):
     # Convert datetime columns to datetime type for sorting and calculations
     df['due_datetime'] = pd.to_datetime(df['due_datetime'])
     df['start_datetime'] = pd.to_datetime(df['start_datetime'])
     df['job_number'] = df['job_number'].astype(str)  # Ensure job_number is treated as text
+
+    # Define break times
+    break_times = [
+        (timedelta(hours=11, minutes=30), timedelta(hours=12, minutes=30)),  # 11:30-12:30
+        (timedelta(hours=23, minutes=0), timedelta(hours=24, minutes=0))     # 23:00-24:00
+    ]
+
+    # Function to adjust job start time based on break times
+    def adjust_for_breaks(start_time, run_time_minutes):
+        # Convert start time to time since the beginning of the day
+        current_time_of_day = start_time.time()
+        current_time_since_midnight = timedelta(hours=current_time_of_day.hour, minutes=current_time_of_day.minute)
+        end_time_since_midnight = current_time_since_midnight + timedelta(minutes=run_time_minutes)
+
+        for break_start, break_end in break_times:
+            # Check if the job overlaps with the break time
+            if current_time_since_midnight < break_end and end_time_since_midnight > break_start:
+                # Adjust start time to the end of the break if overlapping
+                start_time += (break_end - current_time_since_midnight)
+                current_time_since_midnight = timedelta(hours=start_time.time().hour, minutes=start_time.time().minute)
+                end_time_since_midnight = current_time_since_midnight + timedelta(minutes=run_time_minutes)
+
+        return start_time
 
     # Prepare a dictionary to store schedule for each machine
     schedule = {}
@@ -65,6 +88,12 @@ def process_scheduling(df):
                 )
                 sorted_group.loc[i, 'adjusted_start_datetime'] = max(prev_end_time, earliest_start)
 
+            # Adjust the start time to account for break periods
+            run_time = int(sorted_group.loc[i, 'planned_run_time']) + int(sorted_group.loc[i, 'planned_setup_time'])
+            sorted_group.loc[i, 'adjusted_start_datetime'] = adjust_for_breaks(
+                sorted_group.loc[i, 'adjusted_start_datetime'], run_time
+            )
+
         # Drop the original start_datetime column to avoid confusion
         sorted_group = sorted_group.drop(columns=['start_datetime'])
 
@@ -72,6 +101,7 @@ def process_scheduling(df):
         schedule[machine] = sorted_group
 
     return schedule
+
 
 # Function to convert DataFrame to CSV and return it as a downloadable file
 def convert_df_to_csv(df):
